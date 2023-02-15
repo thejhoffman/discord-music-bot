@@ -32,6 +32,13 @@ for (const file of slashFiles) {
   client.slashcommands.set(slashcmd.data.name, slashcmd);
   if (LOAD_SLASH) commands.push(slashcmd.data.toJSON());
 }
+
+client.login(TOKEN);
+
+client.on("ready", () => {
+  client.user.setAvatar('./images/avatar.png');
+});
+
 if (LOAD_SLASH) {
   client.on("ready", () => {
     const GUILDS_LIST = client.guilds.cache.map(guild => guild.id);
@@ -55,12 +62,12 @@ if (LOAD_SLASH) {
         }
       });
   });
-  client.login(TOKEN);
 }
 else {
   client.on("ready", () => {
     console.log(`Logged in as ${client.user.tag}`);
   });
+
   client.on("interactionCreate", (interaction) => {
     async function handleCommand() {
       if (!interaction.isCommand()) return;
@@ -73,5 +80,4 @@ else {
     }
     handleCommand();
   });
-  client.login(TOKEN);
 }
