@@ -1,18 +1,13 @@
 const Discord = require("discord.js");
-const dotenv = require("dotenv");
 const { REST } = require("@discordjs/rest");
 const { Routes } = require("discord-api-types/v9");
 const fs = require("fs");
 const { Player } = require("discord-player");
 const { Client, GatewayIntentBits, } = require('discord.js');
 
-dotenv.config();
-const TOKEN = process.env.TOKEN;
-
 const LOAD_SLASH = process.argv[2] == "load";
 
-const CLIENT_ID = process.env.CLIENT_ID;
-const GUILD_ID = process.env.GUILD_ID;
+const { TOKEN, CLIENT_ID } = require("./config.json");
 
 const client = new Discord.Client({
   intents: [
@@ -37,21 +32,30 @@ for (const file of slashFiles) {
   client.slashcommands.set(slashcmd.data.name, slashcmd);
   if (LOAD_SLASH) commands.push(slashcmd.data.toJSON());
 }
-
 if (LOAD_SLASH) {
-  const rest = new REST({ version: "9" }).setToken(TOKEN);
-  console.log("Deploying slash commands");
-  rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: commands })
-    .then(() => {
-      console.log("Successfully loaded");
-      process.exit(0);
-    })
-    .catch((err) => {
-      if (err) {
-        console.log(err);
-        process.exit(1);
-      }
+  client.on("ready", () => {
+    const GUILDS_LIST = client.guilds.cache.map(guild => guild.id);
+    const rest = new REST({ version: "9" }).setToken(TOKEN);
+    const promises = [];
+
+    GUILDS_LIST.forEach(GUILD_ID => {
+      console.log("Deploying slash commands for guild", GUILD_ID);
+      promises.push(rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: commands }));
     });
+
+    Promise.all(promises)
+      .then(() => {
+        console.log("Successfully loaded");
+        process.exit(0);
+      })
+      .catch((err) => {
+        if (err) {
+          console.log(err);
+          process.exit(1);
+        }
+      });
+  });
+  client.login(TOKEN);
 }
 else {
   client.on("ready", () => {
